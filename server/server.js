@@ -13,7 +13,7 @@ const pool = new Pool({
     port: process.env.PGPORT
 });
 
-const app = express();
+const app = 'https://crud-1t5h.onrender.com'();
 app.use(cors());
 app.use(bodyParser.json());
 
