@@ -22,6 +22,9 @@ function validateEntity(p) {
   if (p.amount===undefined || isNaN(Number(p.amount))) errors.push("amount must be number");
   return errors;
 }
+app.get("/", (req, res) => {
+    res.send("Backend dzia³a ");
+});
 
 // GET all
 app.get('/entities', async (req,res)=>{
