@@ -5,20 +5,21 @@ const cors = require('cors');
 const path = require('path');
 const { Pool } = require('pg');
 
+// Po³¹czenie do bazy z SSL dla Render
 const pool = new Pool({
     host: process.env.PGHOST,
     user: process.env.PGUSER,
     password: process.env.PGPASSWORD,
     database: process.env.PGDATABASE,
     port: process.env.PGPORT,
-    ssl: { rejectUnauthorized: false }
+    ssl: { rejectUnauthorized: false } // kluczowe dla Render PostgreSQL
 });
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-//Serwowanie frontendowych plików statycznych
+// Serwowanie statycznych plików frontendowych
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Funkcja walidacji encji
@@ -29,12 +30,15 @@ function validateEntity(p) {
     return errors;
 }
 
-//API: GET all
+// API: GET all
 app.get('/entities', async (req, res) => {
     try {
         const q = await pool.query("SELECT * FROM entities ORDER BY id DESC");
         res.json(q.rows);
-    } catch (e) { res.status(500).json({ error: "db error" }); }
+    } catch (e) {
+        console.error("DB ERROR:", e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 // GET by id
@@ -44,7 +48,10 @@ app.get('/entities/:id', async (req, res) => {
         const q = await pool.query("SELECT * FROM entities WHERE id=$1", [id]);
         if (q.rows.length === 0) return res.status(404).json({ error: "not found" });
         res.json(q.rows[0]);
-    } catch (e) { res.status(500).json({ error: "db error" }); }
+    } catch (e) {
+        console.error("DB ERROR:", e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 // POST
@@ -58,7 +65,10 @@ app.post('/entities', async (req, res) => {
             [b.name, Number(b.amount), b.description || null]
         );
         res.status(201).json(q.rows[0]);
-    } catch (e) { res.status(500).json({ error: "db error" }); }
+    } catch (e) {
+        console.error("DB ERROR:", e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 // PUT
@@ -75,7 +85,10 @@ app.put('/entities/:id', async (req, res) => {
             [b.name, Number(b.amount), b.description || null, id]
         );
         res.json(q.rows[0]);
-    } catch (e) { res.status(500).json({ error: "db error" }); }
+    } catch (e) {
+        console.error("DB ERROR:", e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 // DELETE
@@ -86,14 +99,17 @@ app.delete('/entities/:id', async (req, res) => {
         if (exists.rows.length === 0) return res.status(404).json({ error: "not found" });
         await pool.query("DELETE FROM entities WHERE id=$1", [id]);
         res.status(204).send();
-    } catch (e) { res.status(500).json({ error: "db error" }); }
+    } catch (e) {
+        console.error("DB ERROR:", e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
-//Wszystkie inne GET kierujemy na frontend (index.html)
+// Wszystkie inne GET kierujemy na frontend
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-//tart serwera
+// Start serwera
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
