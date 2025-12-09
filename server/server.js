@@ -17,7 +17,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// ?? Serwowanie frontendowych plików statycznych
+//Serwowanie frontendowych plików statycznych
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Funkcja walidacji encji
@@ -28,12 +28,7 @@ function validateEntity(p) {
     return errors;
 }
 
-// ?? ROOT (sprawdzenie backendu)
-app.get("/api", (req, res) => {
-    res.send("Backend dzia³a ??");
-});
-
-// ?? API: GET all
+//API: GET all
 app.get('/entities', async (req, res) => {
     try {
         const q = await pool.query("SELECT * FROM entities ORDER BY id DESC");
@@ -93,11 +88,11 @@ app.delete('/entities/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: "db error" }); }
 });
 
-// ?? Wszystkie inne GET kierujemy na frontend (index.html)
+//Wszystkie inne GET kierujemy na frontend (index.html)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// ?? Start serwera
+//tart serwera
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
