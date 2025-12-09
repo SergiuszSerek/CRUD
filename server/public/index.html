@@ -50,12 +50,16 @@
                 <input id="name" required>
             </label>
             <label>
-                Amount
-                <input id="amount" type="number" required>
+                Typ (type)
+                <input id="type" required>
             </label>
             <label>
                 Opis
                 <textarea id="description"></textarea>
+            </label>
+            <label>
+                Extra (extra_text)
+                <input id="extra_text">
             </label>
             <button type="submit">Zapisz</button>
             <button type="button" id="cancelEdit" style="display:none;">Anuluj</button>
@@ -69,8 +73,9 @@
 
     <template id="itemTpl">
         <div class="card">
-            <strong class="title"></strong> <em class="amount"></em>
+            <strong class="title"></strong> <em class="type"></em>
             <p class="description"></p>
+            <p class="extra"></p>
             <div class="actions">
                 <button class="btnEdit">Edytuj</button>
                 <button class="btnDelete">Usuń</button>
@@ -90,28 +95,53 @@
             data.forEach(item => {
                 const tpl = document.getElementById('itemTpl').content.cloneNode(true);
                 tpl.querySelector('.title').textContent = item.name + ' (id:' + item.id + ')';
-                tpl.querySelector('.amount').textContent = 'Amount: ' + item.amount;
+                tpl.querySelector('.type').textContent = item.type || '';
                 tpl.querySelector('.description').textContent = item.description || '';
+                tpl.querySelector('.extra').textContent = item.extra_text || '';
                 tpl.querySelector('.btnEdit').onclick = () => startEdit(item);
                 tpl.querySelector('.btnDelete').onclick = () => doDelete(item.id);
                 list.appendChild(tpl);
             });
         }
 
-        // Wywołaj fetchList przy starcie
-        fetchList();
+        // Dodawanie i edycja
+        document.getElementById('entityForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('entityId').value;
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                type: document.getElementById('type').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                extra_text: document.getElementById('extra_text').value.trim()
+            };
+            if (!payload.name || !payload.type) { alert('Wypełnij wymagane pola'); return; }
 
-        // Automatyczne odświeżanie co 5 sekund
-        setInterval(fetchList, 5000);
+            if (id) {
+                const res = await fetch(apiBase + '/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.ok) resetForm();
+            } else {
+                const res = await fetch(apiBase, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (res.status === 201) resetForm();
+            }
+            fetchList();
+        };
 
-
-        // Rozpocznij edycję
+        // Edycja
         function startEdit(item) {
             document.getElementById('formTitle').textContent = 'Edytuj encję #' + item.id;
             document.getElementById('entityId').value = item.id;
             document.getElementById('name').value = item.name;
-            document.getElementById('amount').value = item.amount;
+            document.getElementById('type').value = item.type;
             document.getElementById('description').value = item.description || '';
+            document.getElementById('extra_text').value = item.extra_text || '';
             document.getElementById('cancelEdit').style.display = 'inline-block';
         }
 
@@ -124,43 +154,12 @@
             document.getElementById('cancelEdit').style.display = 'none';
         }
 
-        // Usuń encję
+        // Usuwanie
         async function doDelete(id) {
             if (!confirm('Usunąć encję #' + id + '?')) return;
             const res = await fetch(apiBase + '/' + id, { method: 'DELETE' });
             if (res.status === 204) fetchList();
-            else alert('Błąd usuwania');
         }
-
-        // Dodaj / Edytuj encję
-        document.getElementById('entityForm').onsubmit = async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('entityId').value;
-            const payload = {
-                name: document.getElementById('name').value.trim(),
-                amount: Number(document.getElementById('amount').value),
-                description: document.getElementById('description').value.trim()
-            };
-            if (!payload.name || isNaN(payload.amount)) { alert('Wypełnij wymagane pola'); return; }
-
-            if (id) {
-                const res = await fetch(apiBase + '/' + id, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (res.ok) { resetForm(); fetchList(); }
-                else alert('Błąd edycji');
-            } else {
-                const res = await fetch(apiBase, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (res.status === 201) { resetForm(); fetchList(); }
-                else alert('Błąd dodawania');
-            }
-        };
 
         // Pobierz listę przy starcie
         fetchList();
